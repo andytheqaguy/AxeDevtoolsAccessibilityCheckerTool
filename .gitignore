@@ -40,3 +40,5 @@ build/
 ### Project properties ###
 /src/test/resources/accessibilityecet.properties
 
+### Ignore the Excel file ###
+*.xlsx
