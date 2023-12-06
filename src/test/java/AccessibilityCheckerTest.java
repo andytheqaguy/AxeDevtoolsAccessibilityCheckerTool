@@ -25,7 +25,9 @@ public class AccessibilityCheckerTest {
     private static int rowNumberFirst = 0;
     private static int rowNumberLast = 1;
     private static int rowNumber = 2;
-    private final String[] header = {"URL", "Name", "Impact", "Count", "HTML Target"}; // Header columns
+    private static int firstColumn = 0;
+    private static int secondColumn = 1;
+    private final String[] header = {"User type", "URL", "Name", "Impact", "Count", "HTML Target"}; // Header columns
     private final XSSFWorkbook workbook = new XSSFWorkbook();
     private final Sheet sheet = workbook.createSheet("Accessibility report"); // Creates the sheet named "Accessibility report"
     private final Row headerRow = sheet.createRow(0);
@@ -84,9 +86,9 @@ public class AccessibilityCheckerTest {
     public static String getProperty(String propertyName) { // Method to retrieve properties from .properties file
         try {
             Properties properties = new Properties();
-            propertiesFileName = "src/test/resources/" + propertiesFileName + ".properties";
+            String fileName = "src/test/resources/" + propertiesFileName + ".properties";
 
-            FileInputStream fileInputStream = new FileInputStream(propertiesFileName);
+            FileInputStream fileInputStream = new FileInputStream(fileName);
             properties.load(fileInputStream);
 
             return properties.getProperty(propertyName);
@@ -123,7 +125,7 @@ public class AccessibilityCheckerTest {
                             JSONObject node = parentNode.getJSONObject(j);
                             if (node.has("html")){ // Checks if the node has a "html" key
                                 htmlTargets[j] = node.getString("html"); // Creates the StringBuilder that contains the html element
-                                count+=1; // Counter of the keys "html" inside "nodes" mpde
+                                count+=1; // Counter of the keys "html" inside "nodes" mode
                                 if (count == parentNode.length()-1) { // Adds "linebreakhere" only if the count is not equal to the first to penultimate StringBuilder variable
                                     htmlTarget.append(htmlTargets[j]).append(" linebreakhere ");
                                 }
@@ -131,10 +133,11 @@ public class AccessibilityCheckerTest {
                                     htmlTarget.append(htmlTargets[j]);
                             }
                         }
-                        writeExcelRow(rowNumber, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered informations
+                        writeExcelRow(typeOfUser, rowNumber, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered information
                         rowNumber++;
                     }
-                    mergeURLCells(rowNumberFirst, rowNumberLast); // Merges cells for the current "violation" node when URL is the same
+                    mergeURLCells(rowNumberFirst, rowNumberLast, firstColumn); // Merges cells for the current "violation" node when URL is the same
+                    mergeURLCells(rowNumberFirst, rowNumberLast, secondColumn);
                 }
             }
         } catch (Exception ignored) {
@@ -157,17 +160,20 @@ public class AccessibilityCheckerTest {
         }
     }
 
-    public void writeExcelRow(int rowNumber, String URL, String name, String impact, int count, StringBuilder target) {
+    public void writeExcelRow(String userType, int rowNumber, String URL, String name, String impact, int count, StringBuilder target) {
         // Creates data rows
         Row dataRow = sheet.createRow(rowNumber-1);
-
-        Cell URLCell = dataRow.createCell(0);
-        Cell nameCell = dataRow.createCell(1);
-        Cell impactCell = dataRow.createCell(2);
-        Cell countCell = dataRow.createCell(3);
-        Cell targetCell = dataRow.createCell(4);
+        Cell userTypeCell = dataRow.createCell(0);
+        Cell URLCell = dataRow.createCell(1);
+        Cell nameCell = dataRow.createCell(2);
+        Cell impactCell = dataRow.createCell(3);
+        Cell countCell = dataRow.createCell(4);
+        Cell targetCell = dataRow.createCell(5);
 
         dataRow.setRowStyle(createAlignCenterStyle());
+
+        userTypeCell.setCellStyle(createAlignCenterStyle());
+        userTypeCell.setCellValue(userType);
 
         URLCell.setCellStyle(createAlignCenterStyle());
         URLCell.setCellValue(URL);
@@ -191,12 +197,13 @@ public class AccessibilityCheckerTest {
 
         // Accesses the setBorders method only if it's the last row of the violations found on the particular page
         if (rowNumber == rowNumberLast) {
-            setBorders(URLCell, nameCell, impactCell, countCell, targetCell);
+            setBorders(userTypeCell, URLCell, nameCell, impactCell, countCell, targetCell);
         }
     }
 
-    public void setBorders(Cell URLCell, Cell nameCell, Cell impactCell, Cell countCell, Cell targetCell) {
+    public void setBorders(Cell userTypeCell, Cell URLCell, Cell nameCell, Cell impactCell, Cell countCell, Cell targetCell) {
         // Sets thin borders after the last cell of the violations found on the particular page
+        userTypeCell.setCellStyle(createBottomThinBorderStyle());
         URLCell.setCellStyle(createBottomThinBorderStyle());
         nameCell.setCellStyle(createBottomThinBorderStyle());
         impactCell.setCellStyle(createBottomThinBorderStyle());
@@ -204,9 +211,9 @@ public class AccessibilityCheckerTest {
         targetCell.setCellStyle(createBottomThinBorderStyle());
     }
 
-    public void mergeURLCells(int firstRow, int lastRow) {
+    public void mergeURLCells(int firstRow, int lastRow, int column) {
         // Merges a range of cells
-        CellRangeAddress cellMerge = new CellRangeAddress(firstRow-1, lastRow-1, 0, 0);
+        CellRangeAddress cellMerge = new CellRangeAddress(firstRow-1, lastRow-1, column, column);
         sheet.addMergedRegion(cellMerge);
     }
 
