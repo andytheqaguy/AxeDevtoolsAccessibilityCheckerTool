@@ -34,7 +34,7 @@ public class AccessibilityCheckerTest {
     private final String defaultUrl = getProperty("url") + getProperty("lang"); // Creates the URL, taking into consideration the lang as well
     private final String loginPagePath = "/user/login"; // Path (optional) to be used in case tests need to be run with a logged-in user
     static ChromeOptions options = new ChromeOptions();
-    private static String fileName = "Accessibility Report <Project> "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
+    private static String fileName = "Accessibility Report <Project Name> "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
     private static String propertiesFileName = "accessibility"; // Properties file name to be used for the tests
 
     @BeforeAll
@@ -149,6 +149,8 @@ public class AccessibilityCheckerTest {
         CellStyle headerStyle = sheet.getWorkbook().createCellStyle();
         Font font = sheet.getWorkbook().createFont();
         font.setBold(true);
+        short fontSize = 14;
+        font.setFontHeightInPoints(fontSize);
         headerStyle.setFont(font);
         headerStyle.setBorderBottom(BorderStyle.MEDIUM);
 
@@ -232,11 +234,22 @@ public class AccessibilityCheckerTest {
     }
     
     public void writeExcelFile() {
-        // Auto-size all columns, commented because it doesn't work as expected
-        /*for (int i = 0; i < header.length; i++){
-            System.out.println("Column: " + i + " has been resized");
-            sheet.autoSizeColumn(i);
-        }*/
+        // Creates a CellRangeAddress for column 1 to column 6
+        CellRangeAddress cellFilter = new CellRangeAddress(0, 0, 0, header.length-1);
+
+        // Sets a filter for the above mentioned ranges
+        sheet.setAutoFilter(cellFilter);
+
+        // Creates freeze pane on row 1
+        sheet.createFreezePane(0, 0);
+
+        // Sets the column width for all columns
+        sheet.setColumnWidth(0, 11*256);
+        sheet.setColumnWidth(1, 101*256);
+        sheet.setColumnWidth(2, 61*256);
+        sheet.setColumnWidth(3, 9*256);
+        sheet.setColumnWidth(4, 8*256);
+        sheet.setColumnWidth(5, 255*256);
 
         // Sets file name with the current date
         LocalDate today = LocalDate.now();
