@@ -20,6 +20,7 @@
         <junit.version>5.10.1</junit.version>
         <apache-poi.version>5.2.5</apache-poi.version>
         <axe-selenium.version>3.0</axe-selenium.version>
+        <json.version>20231013</json.version>
 
         <!-- Plugin Versions -->
         <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
@@ -63,7 +64,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20231013</version>
+            <version>${json.version}</version>
         </dependency>
 
         <dependency>
