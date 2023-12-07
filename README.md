@@ -1,10 +1,10 @@
-# Axe Devtools Accessibility Checker
+# Axe Devtools Accessibility Checker Tool
 
 ## Description
-This project contains a Java class named `AccessibilityCheckerTest` that performs accessibility testing on web pages using Deque's axe-core library in conjunction with Selenium WebDriver and Apache POI for Excel file creation and manipulation.
+This project contains a Java class named `AccessibilityCheckerToolTest` that performs accessibility testing on web pages using Deque's axe-core library in conjunction with Selenium WebDriver and Apache POI for Excel file creation and manipulation.
 
 ## Usage
-The `AccessibilityCheckerTest` class includes a series of methods that:
+The `AccessibilityCheckerToolTest` class includes a series of methods that:
 - Uses Selenium WebDriver to navigate through web pages.
 - Sets up the necessary configurations before running the tests.
 - Reads configuration properties from a file located at `src/test/resources/accessibility.properties`.
@@ -15,7 +15,7 @@ The `AccessibilityCheckerTest` class includes a series of methods that:
 ### Running the Tests
 To run the accessibility tests:
 1. Ensure you have configured the `accessibility.properties` file with the required properties like URLs, user types, login credentials, etc.
-2. Execute the `startScript()` method within the `AccessibilityCheckerTest` class using the following Maven command `mvn clean test`.
+2. Execute the `startScript()` method within the `AccessibilityCheckerToolTest` class using the following Maven command `mvn clean test`.
 
 ### Pre-requisites
 - Ensure that all the dependencies are resolved before trying to run the Maven command.

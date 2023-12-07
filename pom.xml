@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.andytheqaguy.accessibilitychecker</groupId>
-    <artifactId>accessibilitychecker</artifactId>
+    <artifactId>accessibilitycheckertool</artifactId>
     <version>1</version>
 
     <properties>
