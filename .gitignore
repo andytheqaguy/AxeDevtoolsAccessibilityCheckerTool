@@ -35,7 +35,7 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store!
+.DS_Store
 
 ### Project properties ###
 /src/test/resources/accessibilityecet.properties

@@ -237,7 +237,7 @@ public class AccessibilityCheckerTest {
         // Creates a CellRangeAddress for column 1 to column 6
         CellRangeAddress cellFilter = new CellRangeAddress(0, 0, 0, header.length-1);
 
-        // Sets a filter for the above mentioned ranges
+        // Sets a filter for the above-mentioned ranges
         sheet.setAutoFilter(cellFilter);
 
         // Creates freeze pane on row 1
