@@ -27,9 +27,9 @@ public class AccessibilityCheckerTest {
     private static int rowNumber = 2;
     private static int firstColumn = 0;
     private static int secondColumn = 1;
-    private final String[] header = {"User type", "URL", "Name", "Impact", "Count", "HTML Target"}; // Header columns
+    private final String[] header = {"User Type", "URL", "Name", "Impact", "Count", "HTML Target"}; // Header columns
     private final XSSFWorkbook workbook = new XSSFWorkbook();
-    private final Sheet sheet = workbook.createSheet("Accessibility report"); // Creates the sheet named "Accessibility report"
+    private final Sheet sheet = workbook.createSheet("Accessibility Report"); // Creates the sheet named "Accessibility report"
     private final Row headerRow = sheet.createRow(0);
     private final String defaultUrl = getProperty("url") + getProperty("lang"); // Creates the URL, taking into consideration the lang as well
     private final String loginPagePath = "/user/login"; // Path (optional) to be used in case tests need to be run with a logged-in user
@@ -45,6 +45,7 @@ public class AccessibilityCheckerTest {
     }
 
     static WebDriver driver; // Initializes the driver
+
     @AfterAll
     public static void quitDriver() { // Closes the driver after execution
         if (driver != null) {

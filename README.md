@@ -9,7 +9,7 @@ The `AccessibilityCheckerTest` class includes a series of methods that:
 - Sets up the necessary configurations before running the tests.
 - Reads configuration properties from a file located at `src/test/resources/accessibility.properties`.
 - Performs accessibility checks using the Deque's axe-core library on different user types by visiting specified URLs.
-- Captures accessibility violations and populate an Excel report with details including URL, Violation name, Impact, Count, and HTML target element(s).
+- Captures accessibility violations and populate an Excel report with details including User Type, URL, Violation name, Violation impact, Violation count and HTML target element(s).
 - Formats the Excel document to be easily readable.
 
 ### Running the Tests
