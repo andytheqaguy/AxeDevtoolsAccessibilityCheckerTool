@@ -43,6 +43,7 @@ public class Main {
     private final String loginPage = getProperty("login.page"); // Path (optional) to be used in case tests need to be run with a logged-in user
     private final String logoutPage = getProperty("logout.page");
     private boolean writeFile = false;
+    private int writeCount = 0;
     private String typeOfUser = "";
 
     public static void main(String[] args) {
@@ -88,7 +89,6 @@ public class Main {
         log.info("Environment used is: " + env.toUpperCase());
         log.info("Lang used is: " + lang.toUpperCase());
         log.info("Default URL used is: " + defaultUrl);
-        log.info("--------------------");
 
         String[] userTypeList = (getProperty("usertype")).split("\\s*,\\s*");
 
@@ -98,13 +98,14 @@ public class Main {
 
             typeOfUser = userType;
 
+            log.info("--------------------");
             log.info("User type used is: " + typeOfUser.toUpperCase());
 
             if (getProperty("login." + userType).equals("true")) {
                 if (!username.isEmpty() && !password.isEmpty()) {
-                    writeFile = true;
                     userLogin(username, password);
-                    testPath();
+                    writeFile = true;
+                    analyzePaths();
                     userLogout();
                 } else {
                     log.info("Username or password for user type '" + userType + "' in the config file is empty");
@@ -112,18 +113,20 @@ public class Main {
                 }
             } else {
                 writeFile = true;
-                testPath();
+                analyzePaths();
             }
         }
 
-        if (writeFile) {
+        if (writeFile && writeCount > 0) { // It writes the Excel file only if at least 1 path was tested
             writeExcelFile();
+
             log.info("--------------------");
             log.info("SUCCESS!");
             log.info("Excel file was created with name '" + fileName + "'");
             log.info("--------------------");
         }
         else {
+            log.info("--------------------");
             log.info("ERROR!");
             log.info("Excel file was not created");
             log.info("--------------------");
@@ -140,26 +143,28 @@ public class Main {
         passwordField.sendKeys(password + Keys.ENTER);
     }
 
-    private void userLogout() {
+    private void userLogout() { // Logout method
         driver.navigate().to(defaultUrl + logoutPage);
     }
 
-    public void testPath () { // Method to test all the paths from paths.userType
+    public void analyzePaths() { // Method to test all the paths from paths.userType
         if (writeFile) {
             createExcelSheetAndHeader();
 
             try {
                 String[] pathsList = (getProperty("paths." + typeOfUser)).split("\\s*,\\s*");
-                for (String path : pathsList){  // Iterates through the list of paths
-                    String url = defaultUrl + path; // Creates the url with path to navigate to
+                for (String path : pathsList) {  // Iterates through the list of paths
+                    String url = defaultUrl + validatePath(path); // Creates the url with path to navigate to
                     log.info("URL used is: " + url);
+
+                    writeCount++;
                     driver.navigate().to(url);
 
                     JSONObject response = new AXE.Builder(driver, scriptUrl).analyze(); // Returns the analyzed web page as a JSONObject response
                     JSONArray violations = response.getJSONArray("violations"); // Returns only the violations from the response
 
                     if (!violations.isEmpty()) { // Checks if the number of violations is greater than 0
-                        rowNumberFirst = rowNumberLast+1; // Creates the first row number for the violations
+                        rowNumberFirst = rowNumberLast + 1; // Creates the first row number for the violations
                         rowNumberLast = rowNumberLast + violations.length(); // Creates the last row number for the violations
 
                         analyzeViolationsAndCreateExcelRow(violations); // Analyzes violations and creates Excel rows for each violation
@@ -168,11 +173,16 @@ public class Main {
                         mergeURLCells(rowNumberFirst, rowNumberLast, secondColumn); // Merges cells for the current "violation" node when User Type is the same
                     }
                 }
-            } catch (Exception ignored) {
+            } catch(Exception ignored){
             }
         }
+    }
 
-        log.info("--------------------");
+    public String validatePath(String path) { // Removes the '/' from the path's first character if it exists
+        if (path.startsWith("/"))
+            return path.substring(1);
+         else
+            return path;
     }
 
     public void analyzeViolationsAndCreateExcelRow(JSONArray violations) {
