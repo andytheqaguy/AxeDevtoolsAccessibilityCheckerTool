@@ -215,7 +215,7 @@ public class Main {
                 }
             }
 
-            writeExcelRow(typeOfUser, rowNumber, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered information
+            writeExcelRow(rowNumber, typeOfUser, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered information
             rowNumber++;
         }
     }
@@ -238,33 +238,33 @@ public class Main {
         }
     }
 
-    public void writeExcelRow(String userType, int rowNumber, String URL, String name, String impact, int count, StringBuilder target) {
+    public void writeExcelRow(int rowNumber, String userType, String URL, String name, String impact, int count, StringBuilder target) {
         // Creates data rows
         Row dataRow = sheet.createRow(rowNumber-1);
-        Cell userTypeCell = dataRow.createCell(0);
-        Cell URLCell = dataRow.createCell(1);
-        Cell nameCell = dataRow.createCell(2);
-        Cell impactCell = dataRow.createCell(3);
-        Cell countCell = dataRow.createCell(4);
-        Cell targetCell = dataRow.createCell(5);
 
         dataRow.setRowStyle(createAlignCenterStyle());
 
+        Cell userTypeCell = dataRow.createCell(0);
         userTypeCell.setCellStyle(createAlignCenterStyle());
         userTypeCell.setCellValue(userType);
 
+        Cell URLCell = dataRow.createCell(1);
         URLCell.setCellStyle(createAlignCenterStyle());
         URLCell.setCellValue(URL);
 
+        Cell nameCell = dataRow.createCell(2);
         nameCell.setCellStyle(createAlignCenterStyle());
         nameCell.setCellValue(name);
 
+        Cell impactCell = dataRow.createCell(3);
         impactCell.setCellStyle(createAlignCenterStyle());
         impactCell.setCellValue(impact);
 
+        Cell countCell = dataRow.createCell(4);
         countCell.setCellStyle(createAlignCenterStyle());
         countCell.setCellValue(count);
 
+        Cell targetCell = dataRow.createCell(5);
         // Creates a String variable from StringBuilder, with each String on a separate cell row
         String targetInputString = target.toString();
         String[] substrings = targetInputString.split("linebreakhere");
