@@ -46,9 +46,7 @@ public class Main {
         Main tool = new Main();
         log.info("--------------------");
         log.info("Tests started");
-        startDriver();
         tool.startScript();
-        closeDriver();
     }
 
     public static void startDriver() { // Adds arguments into the driver
@@ -66,6 +64,8 @@ public class Main {
     }
 
     public void startScript() {
+        startDriver();
+
         log.info("--------------------");
         log.info("Environment is: " + env);
         log.info("Lang is: " + lang);
@@ -106,6 +106,7 @@ public class Main {
             log.error("Excel file was not created");
             log.info("--------------------");
         }
+
         closeDriver();
     }
 
