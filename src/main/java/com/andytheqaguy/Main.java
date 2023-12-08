@@ -22,12 +22,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 public class Main {
+    private static final String propertiesFileName = "config"; // Properties file name to be used for the tests
     private static final URL scriptUrl = Main.class.getResource("/axe.min.js");
+    static ChromeOptions options = new ChromeOptions();
+    static WebDriver driver; // Initializes the driver
     private static int rowNumberFirst = 0;
     private static int rowNumberLast = 1;
     private static int rowNumber = 2;
-    private static int firstColumn = 0;
-    private static int secondColumn = 1;
+    private static final int firstColumn = 0;
+    private static final int secondColumn = 1;
+    private static String fileName = "Accessibility Report "+ getProperty("project.name") + " "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
     private final String[] header = {"User Type", "URL", "Name", "Impact", "Count", "HTML Target"}; // Header columns
     private final XSSFWorkbook workbook = new XSSFWorkbook();
     private final Sheet sheet = workbook.createSheet("Accessibility Report"); // Creates the sheet named "Accessibility report"
@@ -37,17 +42,16 @@ public class Main {
     private final String defaultUrl = getProperty("url."+env) + getProperty("lang") + "/";
     private final String loginPage = getProperty("login.page"); // Path (optional) to be used in case tests need to be run with a logged-in user
     private final String logoutPage = getProperty("logout.page");
-    static ChromeOptions options = new ChromeOptions();
-    private static String fileName = "Accessibility Report "+ getProperty("project.name") + " "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
-    private static final String propertiesFileName = "config"; // Properties file name to be used for the tests
-    private static Logger log = LoggerFactory.getLogger(Main.class);
     private boolean writeFile = false;
+    private String typeOfUser = "";
 
     public static void main(String[] args) {
         Main tool = new Main();
         log.info("--------------------");
         log.info("SCRIPT STARTED!");
         tool.startScript();
+        log.info("SCRIPT ENDED!");
+        log.info("--------------------");
     }
 
     public static void startDriver() { // Adds arguments into the driver
@@ -56,68 +60,16 @@ public class Main {
         driver = new ChromeDriver(options);
     }
 
-    static WebDriver driver; // Initializes the driver
-
     public static void closeDriver() { // Closes the driver after execution
         if (driver != null) {
             driver.quit();
         }
     }
 
-    public void startScript() {
-        startDriver();
-
-        log.info("--------------------");
-        log.info("Environment is: " + env);
-        log.info("Lang is: " + lang);
-        log.info("Default URL is: " + defaultUrl);
-        log.info("--------------------");
-
-        String[] userTypeList = (getProperty("usertype")).split("\\s*,\\s*");
-
-
-
-        for (int i = 0 ; i < userTypeList.length; i++) {
-            String userType = userTypeList[i];
-            String username = getProperty("username." + userType);
-            String password = getProperty("password." + userType);
-
-            if (getProperty("login." + userType).equals("true")) {
-                if (!username.isEmpty() && !password.isEmpty()) {
-                    writeFile = true;
-                    userLogin(username, password);
-                    testPath(userType);
-                    userLogout();
-                } else {
-                    log.error("Username or password for user type '" + userType + "' in the config file is empty");
-                }
-            }
-            else {
-                writeFile = true;
-                testPath(userType);
-            }
-        }
-
-        closeDriver();
-    }
-
-    private void userLogout() {
-        driver.navigate().to(defaultUrl + logoutPage);
-    }
-
-    public void userLogin(String username, String password) { // Login method in case pages need to be tested from a logged-in user perspective as well
-            driver.navigate().to(defaultUrl + loginPage);
-            WebElement usernameField = driver.findElement(By.id("edit-name"));
-            WebElement passwordField = driver.findElement(By.id("edit-pass"));
-            usernameField.sendKeys(username);
-            passwordField.sendKeys(password + Keys.ENTER);
-    }
-
     public static String getProperty(String propertyName) { // Method to retrieve properties from .properties file
         try {
             Properties properties = new Properties();
             String fileName = "src/main/resources/" + propertiesFileName + ".properties";
-
             FileInputStream fileInputStream = new FileInputStream(fileName);
             properties.load(fileInputStream);
 
@@ -125,72 +77,137 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return null;
     }
 
-    public void testPath (String typeOfUser) { // Method to test all the paths from paths.userType
+    public void startScript() {
+        startDriver();
+
+        log.info("--------------------");
+        log.info("Environment used is: " + env.toUpperCase());
+        log.info("Lang used is: " + lang.toUpperCase());
+        log.info("Default URL used is: " + defaultUrl);
+        log.info("--------------------");
+
+        String[] userTypeList = (getProperty("usertype")).split("\\s*,\\s*");
+
+        for (String userType : userTypeList) {
+            String username = getProperty("username." + userType);
+            String password = getProperty("password." + userType);
+
+            typeOfUser = userType;
+
+            log.info("User type used is: " + typeOfUser.toUpperCase());
+
+            if (getProperty("login." + userType).equals("true")) {
+                if (!username.isEmpty() && !password.isEmpty()) {
+                    writeFile = true;
+                    userLogin(username, password);
+                    testPath();
+                    userLogout();
+                } else {
+                    log.info("Username or password for user type '" + userType + "' in the config file is empty");
+                    log.info("Please correct the information and run the script again");
+                }
+            } else {
+                writeFile = true;
+                testPath();
+            }
+        }
+
         if (writeFile) {
-            log.info("User type is: " + typeOfUser);
-            createExcelSheetAndHeader();
-
-            try {
-                String[] pathsList = (getProperty("paths." + typeOfUser)).split("\\s*,\\s*");
-                for (String path : pathsList){ // Iterates through the list of paths
-                    String url = defaultUrl + path; // Creates the url with path to navigate to
-                    log.info("URL tested is: " + url);
-                    driver.navigate().to(url);
-                    JSONObject response = new AXE.Builder(driver, scriptUrl).analyze();// Returns the analyzed web page as a JSONObject response
-                    JSONArray violations = response.getJSONArray("violations"); // Returns only the violations from the response
-                    if (!violations.isEmpty()) { // Checks if the number of violations is greater than 0
-                        rowNumberFirst = rowNumberLast+1; // Creates the first row number for the violations
-                        rowNumberLast = rowNumberLast + violations.length(); // Creates the last row number for the creations
-                        for (int i = 0; i < violations.length(); i++) {
-
-                            JSONObject violation = violations.getJSONObject(i);
-                            String URL = driver.getCurrentUrl(); // Tested URL
-                            String name = violation.getString("help"); // Name of the violation
-
-                            JSONArray parentNode = violation.getJSONArray("nodes");
-                            JSONObject childNode = parentNode.getJSONObject(0);
-                            String impact = childNode.getString("impact"); // Impact level of the violation
-                            int count = 0;
-                            String[] htmlTargets = new String[50]; // Creates a String array, size set to 50
-                            StringBuilder htmlTarget = new StringBuilder();
-                            for (int j = 0; j < parentNode.length(); j++) { // Iterates through the nodes of "nodes" node
-                                JSONObject node = parentNode.getJSONObject(j);
-                                if (node.has("html")){ // Checks if the node has a "html" key
-                                    htmlTargets[j] = node.getString("html"); // Creates the StringBuilder that contains the html element
-                                    count+=1; // Counter of the keys "html" inside "nodes" mode
-                                    if (count == parentNode.length()-1) { // Adds "linebreakhere" only if the count is not equal to the first to penultimate StringBuilder variable
-                                        htmlTarget.append(htmlTargets[j]).append(" linebreakhere ");
-                                    }
-                                    else
-                                        htmlTarget.append(htmlTargets[j]);
-                                }
-                            }
-                            writeExcelRow(typeOfUser, rowNumber, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered information
-                            rowNumber++;
-                        }
-                        mergeURLCells(rowNumberFirst, rowNumberLast, firstColumn); // Merges cells for the current "violation" node when URL is the same
-                        mergeURLCells(rowNumberFirst, rowNumberLast, secondColumn);
-                    }
-                }
-            } catch (Exception ignored) {
-                }
-
             writeExcelFile();
             log.info("--------------------");
             log.info("SUCCESS!");
             log.info("Excel file was created with name '" + fileName + "'");
             log.info("--------------------");
-
-        } else {
+        }
+        else {
             log.info("ERROR!");
-            log.error("Excel file was not created");
+            log.info("Excel file was not created");
             log.info("--------------------");
         }
-        log.info("SCRIPT ENDED!");
+
+        closeDriver();
+    }
+
+    public void userLogin(String username, String password) { // Login method in case pages need to be tested from a logged-in user perspective as well
+        driver.navigate().to(defaultUrl + loginPage);
+        WebElement usernameField = driver.findElement(By.id("edit-name"));
+        WebElement passwordField = driver.findElement(By.id("edit-pass"));
+        usernameField.sendKeys(username);
+        passwordField.sendKeys(password + Keys.ENTER);
+    }
+
+    private void userLogout() {
+        driver.navigate().to(defaultUrl + logoutPage);
+    }
+
+    public void testPath () { // Method to test all the paths from paths.userType
+        if (writeFile) {
+            createExcelSheetAndHeader();
+
+            try {
+                String[] pathsList = (getProperty("paths." + typeOfUser)).split("\\s*,\\s*");
+                for (String path : pathsList){  // Iterates through the list of paths
+                    String url = defaultUrl + path; // Creates the url with path to navigate to
+                    log.info("URL used is: " + url);
+                    driver.navigate().to(url);
+
+                    JSONObject response = new AXE.Builder(driver, scriptUrl).analyze(); // Returns the analyzed web page as a JSONObject response
+                    JSONArray violations = response.getJSONArray("violations"); // Returns only the violations from the response
+
+                    if (!violations.isEmpty()) { // Checks if the number of violations is greater than 0
+                        rowNumberFirst = rowNumberLast+1; // Creates the first row number for the violations
+                        rowNumberLast = rowNumberLast + violations.length(); // Creates the last row number for the violations
+
+                        analyzeViolationsAndCreateExcelRow(violations); // Analyzes violations and creates Excel rows for each violation
+
+                        mergeURLCells(rowNumberFirst, rowNumberLast, firstColumn); // Merges cells for the current "violation" node when URL is the same
+                        mergeURLCells(rowNumberFirst, rowNumberLast, secondColumn); // Merges cells for the current "violation" node when User Type is the same
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         log.info("--------------------");
+    }
+
+    public void analyzeViolationsAndCreateExcelRow(JSONArray violations) {
+        for (int i = 0; i < violations.length(); i++) {
+            JSONObject violation = violations.getJSONObject(i);
+
+            String URL = driver.getCurrentUrl(); // Tested URL
+            String name = violation.getString("help"); // Name of the violation
+
+            JSONArray parentNode = violation.getJSONArray("nodes");
+            JSONObject childNode = parentNode.getJSONObject(0);
+
+            String impact = childNode.getString("impact"); // Impact level of the violation
+
+            int count = 0;
+
+            String[] htmlTargets = new String[50]; // Creates a String array, size set to 50
+            StringBuilder htmlTarget = new StringBuilder();
+
+            for (int j = 0; j < parentNode.length(); j++) { // Iterates through the nodes of "nodes" node
+                JSONObject node = parentNode.getJSONObject(j);
+                if (node.has("html")){ // Checks if the node has a "html" key
+                    htmlTargets[j] = node.getString("html"); // Creates the StringBuilder that contains the html element
+                    count+=1; // Counter of the keys "html" inside "nodes" mode
+                    if (count == parentNode.length()-1) { // Adds "linebreakhere" only if the count is not equal to the first to penultimate StringBuilder variable
+                        htmlTarget.append(htmlTargets[j]).append(" linebreakhere ");
+                    }
+                    else
+                        htmlTarget.append(htmlTargets[j]);
+                }
+            }
+
+            writeExcelRow(typeOfUser, rowNumber, URL, name, impact, count, htmlTarget); // Writes a single Excel row with the gathered information
+            rowNumber++;
+        }
     }
 
     public void createExcelSheetAndHeader() {
@@ -281,7 +298,7 @@ public class Main {
         style.setBorderBottom(BorderStyle.THIN);
         return style;
     }
-    
+
     public void writeExcelFile() {
         // Creates a CellRangeAddress for column 1 to column 6
         CellRangeAddress cellFilter = new CellRangeAddress(0, 0, 0, header.length-1);
@@ -310,8 +327,6 @@ public class Main {
             FileOutputStream out = new FileOutputStream("./" + fileName +".xlsx");
             workbook.write(out);
             out.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
