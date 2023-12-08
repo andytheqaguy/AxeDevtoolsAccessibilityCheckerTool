@@ -1,12 +1,11 @@
+package com.andytheqaguy;
+
 import com.deque.axe.AXE;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -20,8 +19,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
-public class AccessibilityCheckerToolTest {
-    private static final URL scriptUrl = AccessibilityCheckerToolTest.class.getResource("/axe.min.js");
+public class Main {
+    private static final URL scriptUrl = Main.class.getResource("/axe.min.js");
     private static int rowNumberFirst = 0;
     private static int rowNumberLast = 1;
     private static int rowNumber = 2;
@@ -31,13 +30,14 @@ public class AccessibilityCheckerToolTest {
     private final XSSFWorkbook workbook = new XSSFWorkbook();
     private final Sheet sheet = workbook.createSheet("Accessibility Report"); // Creates the sheet named "Accessibility report"
     private final Row headerRow = sheet.createRow(0);
-    private final String defaultUrl = getProperty("url") + getProperty("lang"); // Creates the URL, taking into consideration the lang as well
-    private final String loginPagePath = "/user/login"; // Path (optional) to be used in case tests need to be run with a logged-in user
+    //private String defaultUrl = getProperty("url") + getProperty("lang"); // Creates the URL, taking into consideration the lang as well
+    private String defaultUrl = "";
+    private String env = getProperty("env");
+    private final String loginPagePath = "user/login"; // Path (optional) to be used in case tests need to be run with a logged-in user
     static ChromeOptions options = new ChromeOptions();
     private static String fileName = "Accessibility Report <Project Name> "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
-    private static String propertiesFileName = "accessibility"; // Properties file name to be used for the tests
+    private static String propertiesFileName = "configECET"; // Properties file name to be used for the tests
 
-    @BeforeAll
     public static void setupDriver() { // Adds arguments into the driver
         //"--headless"
         options.addArguments();
@@ -46,15 +46,22 @@ public class AccessibilityCheckerToolTest {
 
     static WebDriver driver; // Initializes the driver
 
-    @AfterAll
+    public static void main(String[] args) {
+        Main tool = new Main();
+        setupDriver();
+        tool.startScript();
+        quitDriver();
+    }
+
     public static void quitDriver() { // Closes the driver after execution
         if (driver != null) {
             driver.quit();
         }
     }
 
-    @Test
     public void startScript() {
+        setBaseUrl();
+
         String[] userTypeList = (getProperty("usertype")).split("\\s*,\\s*");
 
         String username = getProperty("username");
@@ -64,16 +71,31 @@ public class AccessibilityCheckerToolTest {
 
         for (String userType : userTypeList) { // Iterates through the list of user types
             switch (userType) { // Different steps for different user types
-                case "userType1":
+                case "anonymous":
                     testPath(userType);
                     break;
-                case "userType2":
+                case "etwinner":
                     userLogin(username, password);
                     testPath(userType);
                     break;
             }
         }
         writeExcelFile();
+    }
+
+    public void setBaseUrl() {
+        switch (env){
+            case "prod":
+                defaultUrl = "https://school-education.ec.europa.eu/" + getProperty("lang") + "/";
+                break;
+            case "acc":
+                defaultUrl = "https://eacea-esep.acc.fpfis.tech.ec.europa.eu/" + getProperty("lang") + "/";
+                break;
+        }
+        System.out.println("--------------------");
+        System.out.println("Environment is: " + env);
+        System.out.println("Default URL is: " + defaultUrl);
+        System.out.println("--------------------");
     }
 
     public void userLogin(String username, String password) { // Login method in case pages need to be tested from a logged-in user perspective as well
@@ -87,7 +109,7 @@ public class AccessibilityCheckerToolTest {
     public static String getProperty(String propertyName) { // Method to retrieve properties from .properties file
         try {
             Properties properties = new Properties();
-            String fileName = "src/test/resources/" + propertiesFileName + ".properties";
+            String fileName = "src/main/resources/" + propertiesFileName + ".properties";
 
             FileInputStream fileInputStream = new FileInputStream(fileName);
             properties.load(fileInputStream);
@@ -100,12 +122,14 @@ public class AccessibilityCheckerToolTest {
     }
 
     public void testPath (String typeOfUser) { // Method to test all the paths from paths.userType
+        System.out.println("User type is: " + typeOfUser);
         try {
             String[] pathsList = (getProperty("paths." + typeOfUser)).split("\\s*,\\s*");
             for (String path : pathsList){ // Iterates through the list of paths
                 String url = defaultUrl + path; // Creates the url with path to navigate to
+                System.out.println("URL is: " + url);
                 driver.navigate().to(url);
-                JSONObject response = new AXE.Builder(driver, scriptUrl).analyze(); // Returns the analyzed web page as a JSONObject response
+                JSONObject response = new AXE.Builder(driver, scriptUrl).analyze();// Returns the analyzed web page as a JSONObject response
                 JSONArray violations = response.getJSONArray("violations"); // Returns only the violations from the response
                 if (violations.length() > 0) { // Checks if the number of violations is greater than 0
                     rowNumberFirst = rowNumberLast+1; // Creates the first row number for the violations
@@ -143,6 +167,7 @@ public class AccessibilityCheckerToolTest {
             }
         } catch (Exception ignored) {
             }
+        System.out.println("--------------------");
     }
 
     public void createExcelSheetAndHeader() {
