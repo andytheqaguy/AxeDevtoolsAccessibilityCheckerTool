@@ -1,6 +1,8 @@
 package com.andytheqaguy;
 
 import com.deque.axe.AXE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -30,15 +32,26 @@ public class Main {
     private final XSSFWorkbook workbook = new XSSFWorkbook();
     private final Sheet sheet = workbook.createSheet("Accessibility Report"); // Creates the sheet named "Accessibility report"
     private final Row headerRow = sheet.createRow(0);
-    //private String defaultUrl = getProperty("url") + getProperty("lang"); // Creates the URL, taking into consideration the lang as well
-    private String defaultUrl = "";
-    private String env = getProperty("env");
-    private final String loginPagePath = "user/login"; // Path (optional) to be used in case tests need to be run with a logged-in user
+    private final String env = getProperty("env");
+    private final String lang = getProperty("lang");
+    private final String defaultUrl = getProperty("url."+env) + getProperty("lang") + "/";
+    private final String loginPage = getProperty("login.page"); // Path (optional) to be used in case tests need to be run with a logged-in user
+    private final String logoutPage = getProperty("logout.page");
     static ChromeOptions options = new ChromeOptions();
-    private static String fileName = "Accessibility Report <Project Name> "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
-    private static String propertiesFileName = "configECET"; // Properties file name to be used for the tests
+    private static String fileName = "Accessibility Report "+ getProperty("project.name") + " "; // File name to be used for the report, final file name will be: Accessibility Report <Project> dd.MM.yyyy
+    private static final String propertiesFileName = "config"; // Properties file name to be used for the tests
+    private static Logger log = LoggerFactory.getLogger(Main.class);
 
-    public static void setupDriver() { // Adds arguments into the driver
+    public static void main(String[] args) {
+        Main tool = new Main();
+        log.info("--------------------");
+        log.info("Tests started");
+        startDriver();
+        tool.startScript();
+        closeDriver();
+    }
+
+    public static void startDriver() { // Adds arguments into the driver
         //"--headless"
         options.addArguments();
         driver = new ChromeDriver(options);
@@ -46,64 +59,66 @@ public class Main {
 
     static WebDriver driver; // Initializes the driver
 
-    public static void main(String[] args) {
-        Main tool = new Main();
-        setupDriver();
-        tool.startScript();
-        quitDriver();
-    }
-
-    public static void quitDriver() { // Closes the driver after execution
+    public static void closeDriver() { // Closes the driver after execution
         if (driver != null) {
             driver.quit();
         }
     }
 
     public void startScript() {
-        setBaseUrl();
+        log.info("--------------------");
+        log.info("Environment is: " + env);
+        log.info("Lang is: " + lang);
+        log.info("Default URL is: " + defaultUrl);
+        log.info("--------------------");
 
         String[] userTypeList = (getProperty("usertype")).split("\\s*,\\s*");
 
-        String username = getProperty("username");
-        String password = getProperty("password");
+        boolean writeFile = false;
 
-        createExcelSheetAndHeader();
+        for (int i = 0 ; i < userTypeList.length; i++) {
+            String userType = userTypeList[i];
+            String username = getProperty("username." + userType);
+            String password = getProperty("password." + userType);
 
-        for (String userType : userTypeList) { // Iterates through the list of user types
-            switch (userType) { // Different steps for different user types
-                case "anonymous":
-                    testPath(userType);
-                    break;
-                case "etwinner":
+            if (getProperty("login." + userType).equals("true")) {
+                if (!username.isEmpty() && !password.isEmpty()) {
                     userLogin(username, password);
                     testPath(userType);
-                    break;
+                    userLogout();
+                    writeFile = true;
+                } else {
+                    log.error("Username or password for user type '" + userType + "' in the config file is empty");
+                }
+            }
+            else {
+                testPath(userType);
+                writeFile = true;
             }
         }
-        writeExcelFile();
+
+        if (writeFile) {
+            createExcelSheetAndHeader();
+            writeExcelFile();
+            log.info("Excel file was created with name '" + fileName + "'");
+            log.info("--------------------");
+        } else {
+            log.error("Excel file was not created");
+            log.info("--------------------");
+        }
+        closeDriver();
     }
 
-    public void setBaseUrl() {
-        switch (env){
-            case "prod":
-                defaultUrl = "https://school-education.ec.europa.eu/" + getProperty("lang") + "/";
-                break;
-            case "acc":
-                defaultUrl = "https://eacea-esep.acc.fpfis.tech.ec.europa.eu/" + getProperty("lang") + "/";
-                break;
-        }
-        System.out.println("--------------------");
-        System.out.println("Environment is: " + env);
-        System.out.println("Default URL is: " + defaultUrl);
-        System.out.println("--------------------");
+    private void userLogout() {
+        driver.navigate().to(defaultUrl + logoutPage);
     }
 
     public void userLogin(String username, String password) { // Login method in case pages need to be tested from a logged-in user perspective as well
-        driver.navigate().to(defaultUrl + loginPagePath);
-        WebElement usernameField = driver.findElement(By.id("edit-name"));
-        WebElement passwordField = driver.findElement(By.id("edit-pass"));
-        usernameField.sendKeys(username);
-        passwordField.sendKeys(password + Keys.ENTER);
+            driver.navigate().to(defaultUrl + loginPage);
+            WebElement usernameField = driver.findElement(By.id("edit-name"));
+            WebElement passwordField = driver.findElement(By.id("edit-pass"));
+            usernameField.sendKeys(username);
+            passwordField.sendKeys(password + Keys.ENTER);
     }
 
     public static String getProperty(String propertyName) { // Method to retrieve properties from .properties file
@@ -122,16 +137,16 @@ public class Main {
     }
 
     public void testPath (String typeOfUser) { // Method to test all the paths from paths.userType
-        System.out.println("User type is: " + typeOfUser);
+        log.info("User type is: " + typeOfUser);
         try {
             String[] pathsList = (getProperty("paths." + typeOfUser)).split("\\s*,\\s*");
             for (String path : pathsList){ // Iterates through the list of paths
                 String url = defaultUrl + path; // Creates the url with path to navigate to
-                System.out.println("URL is: " + url);
+                log.info("URL tested is: " + url);
                 driver.navigate().to(url);
                 JSONObject response = new AXE.Builder(driver, scriptUrl).analyze();// Returns the analyzed web page as a JSONObject response
                 JSONArray violations = response.getJSONArray("violations"); // Returns only the violations from the response
-                if (violations.length() > 0) { // Checks if the number of violations is greater than 0
+                if (!violations.isEmpty()) { // Checks if the number of violations is greater than 0
                     rowNumberFirst = rowNumberLast+1; // Creates the first row number for the violations
                     rowNumberLast = rowNumberLast + violations.length(); // Creates the last row number for the creations
                     for (int i = 0; i < violations.length(); i++) {
@@ -167,7 +182,7 @@ public class Main {
             }
         } catch (Exception ignored) {
             }
-        System.out.println("--------------------");
+        log.info("--------------------");
     }
 
     public void createExcelSheetAndHeader() {

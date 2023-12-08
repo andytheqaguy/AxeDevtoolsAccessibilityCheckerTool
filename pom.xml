@@ -17,17 +17,16 @@
 
         <!-- Dependency Versions -->
         <selenium-java.version>4.15.0</selenium-java.version>
-        <junit.version>5.10.1</junit.version>
         <apache-poi.version>5.2.5</apache-poi.version>
         <axe-selenium.version>3.0</axe-selenium.version>
         <json.version>20231013</json.version>
-        <exec-maven-plugin.version>3.1.1</exec-maven-plugin.version>
+        <slf4j-simple.version>2.0.9</slf4j-simple.version>
 
         <!-- Plugin Versions -->
         <maven-surefire-plugin.version>3.1.0</maven-surefire-plugin.version>
         <maven-failsafe-plugin.version>3.1.0</maven-failsafe-plugin.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <parallel.tests>1</parallel.tests>
+        <exec-maven-plugin.version>3.1.1</exec-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -36,22 +35,6 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium-java.version}</version>
-        </dependency>
-
-        <!--    https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
@@ -74,13 +57,12 @@
             <version>${axe-selenium.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/io.rest-assured/rest-assured -->
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>5.3.2</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j-simple.version}</version>
         </dependency>
-
     </dependencies>
 
     <build>

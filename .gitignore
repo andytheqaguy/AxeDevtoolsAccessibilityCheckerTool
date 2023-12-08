@@ -39,7 +39,7 @@ build/
 .DS_Store
 
 ### Project properties ###
-/src/test/resources/accessibilityecet.properties
+/src/main/resources/configECET.properties
 
 ### Ignore the Excel file ###
 *.xlsx
